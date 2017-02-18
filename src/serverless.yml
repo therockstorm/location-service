@@ -1,0 +1,45 @@
+frameworkVersion: "=1.7.0"
+
+service: ${file(./package.json):name}
+
+provider:
+  name: aws
+  runtime: nodejs4.3
+  region: us-west-2
+  stage: ${env:NODE_ENV}
+  cfLogs: true
+  timeout: 6
+  memorySize: 128
+  environment:
+    NODE_ENV: ${env:NODE_ENV}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+      Resource: arn:aws:dynamodb:${self:provider.region}:111685254296:table/*
+
+functions:
+  api:
+    handler: api.handle
+    events:
+      - http:
+          path: locations
+          method: POST
+
+resources:
+  Resources:
+    LocationsTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: Timestamp
+            AttributeType: S
+        KeySchema:
+          - AttributeName: Timestamp
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: Locationsdevelopment

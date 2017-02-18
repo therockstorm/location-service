@@ -1,0 +1,12 @@
+# Artifacts
+*.log
+node_modules
+.serverless
+build
+dist
+coverage
+
+# Misc
+.DS_Store
+schema.graphql
+.env
