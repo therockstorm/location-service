@@ -6,7 +6,8 @@
     "build": "mkdir dist && cp src/serverless.yml dist && cp src/package.json dist && cd dist && yarn && cd .. && babel --out-dir=dist ./src",
     "clean": "rm -rf dist",
     "deploy": "yarn run clean && yarn run build && cd dist && serverless deploy --stage $NODE_ENV --verbose && cd ..",
-    "lint": "eslint . --fix"
+    "lint": "eslint . --fix",
+    "test:api": "babel-node apiFunc.js"
   },
   "devDependencies": {
     "aws-sdk": "^2.7.x",

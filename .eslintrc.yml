@@ -6,8 +6,9 @@ env:
   es6: true
   node: true
 rules:
+  no-param-reassign: 0
   comma-dangle: 0
-  no-confusing-arrow:
-    - error
-    - allowParens: true
+  arrow-parens: 0
+  no-mixed-operators: 0
+  no-confusing-arrow: 0
   no-underscore-dangle: 0
