@@ -24,19 +24,16 @@ const shouldUpdate = (last, body) => {
   return d > 5;
 };
 
+const getLoc = loc => ({ lat: loc.slat, lon: loc.slon });
+
 // eslint-disable-next-line import/prefer-default-export
 export function handle(event, context, cb) {
   if (event.httpMethod === 'GET') {
-    return getLocations().then(locs => cb(
-      null,
-      res(
-        {
-          last: { lat: locs.last.slat, lon: locs.last.slon },
-          history: locs.history.map(h => ({ lat: h.slat, lon: h.slon }))
-        },
-        context
-      )
-    ));
+    return getLocations().then(locs =>
+      cb(
+        null,
+        res({ last: getLoc(locs.last), history: locs.history.map(h => getLoc(h)) }, context)
+      ));
   }
 
   const r = res({ success: true }, context);
