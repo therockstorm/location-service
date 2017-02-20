@@ -16,9 +16,7 @@ provider:
     - Effect: Allow
       Action:
         - dynamodb:Query
-        - dynamodb:GetItem
         - dynamodb:PutItem
-        - dynamodb:UpdateItem
       Resource: arn:aws:dynamodb:${self:provider.region}:111685254296:table/*
 
 functions:
@@ -28,6 +26,10 @@ functions:
       - http:
           path: locations
           method: POST
+      - http:
+          path: locations
+          method: GET
+          cors: true
 
 resources:
   Resources:

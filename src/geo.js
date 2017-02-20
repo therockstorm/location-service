@@ -1,6 +1,6 @@
 const EARTH_RADIUS_IN_MILES = 3958.756;
 const ONE_DEG_AT_EQ_IN_MILES = 69.172;
-const ONE_MILE_OF_LAT_IN_DEG = 2 / ONE_DEG_AT_EQ_IN_MILES;
+const ONE_MILE_OF_LAT_IN_DEG = 1 / ONE_DEG_AT_EQ_IN_MILES;
 
 const getRandomInt = max => Math.floor(Math.random() * max);
 

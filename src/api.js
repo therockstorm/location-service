@@ -2,25 +2,20 @@ import { distBetween, getSkewedLat, getSkewedLon } from './geo';
 import { error, log } from './util';
 import { updateLocations, getLocations } from './storage';
 
-const trip = '2017-04-WildChild';
+const res = (body, context) => ({
+  statusCode: 200,
+  headers: {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'X-Request-Id': context.awsRequestId
+  },
+  body: JSON.stringify(body)
+});
 
-class Response {
-  static create(body, context) {
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Request-Id': context.awsRequestId
-      },
-      body: JSON.stringify(body)
-    };
-  }
-
-  static error(msg, context) {
-    error(msg);
-    return Response.create({ success: false }, context);
-  }
-}
+const errorRes = (msg, r) => {
+  error(msg);
+  return r;
+};
 
 const shouldUpdate = (last, body) => {
   if (!last) return true;
@@ -31,34 +26,43 @@ const shouldUpdate = (last, body) => {
 
 // eslint-disable-next-line import/prefer-default-export
 export function handle(event, context, cb) {
+  if (event.httpMethod === 'GET') {
+    return getLocations().then(locs => cb(
+      null,
+      res(
+        {
+          last: { lat: locs.last.slat, lon: locs.last.slon },
+          history: locs.history.map(h => ({ lat: h.slat, lon: h.slon }))
+        },
+        context
+      )
+    ));
+  }
+
+  const r = res({ success: true }, context);
   let body;
   try {
     body = JSON.parse(event.body);
   } catch (e) {
-    return cb(null, Response.error(`Invalid JSON. event="${JSON.stringify(event)}"`, context));
+    return cb(null, errorRes(`Invalid JSON. event="${JSON.stringify(event)}"`, r));
   }
 
-  // Return only skewed loc to client delayed by 4 hours and draw Polyline of route
-  // Show marker of current loc
-  // https://developers.google.com/maps/documentation/static-maps/intro#location
-  const res = Response.create({ success: true }, context);
-  if (body._type !== 'location') return cb(null, res);
+  if (body._type !== 'location') return cb(null, r);
 
-  return getLocations(trip).then(locs => {
-    locs = locs.length === 0 ? { history: [] } : locs[0];
-    if (!shouldUpdate(locs.last, body)) return cb(null, res);
+  return getLocations().then(locs => {
+    if (!shouldUpdate(locs.last, body)) return cb(null, r);
 
     const cur = {
       lat: body.lat,
       lon: body.lon,
-      lats: getSkewedLat(body.lat),
-      lons: getSkewedLon(body.lat, body.lon),
+      slat: getSkewedLat(body.lat),
+      slon: getSkewedLon(body.lat, body.lon),
       time: body.tst
     };
     locs.last = cur;
     locs.history.push(cur);
-    return updateLocations(trip, locs)
-      .then(() => cb(null, res))
-      .catch(err => cb(null, Response.error(err, context)));
+    return updateLocations(locs)
+      .then(() => cb(null, r))
+      .catch(err => cb(null, errorRes(err, context)));
   });
 }
