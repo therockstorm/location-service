@@ -17,14 +17,14 @@ const errorRes = (msg, r) => {
   return r;
 };
 
-const shouldUpdate = (last, body) => {
+const shouldUpdateLoc = (last, body) => {
   if (!last) return true;
   const d = distBetween(last.lat, last.lon, body.lat, body.lon);
   log(`${d} miles from last location.`);
   return d > 5;
 };
 
-const getLoc = loc => ({ lat: loc.slat, lon: loc.slon });
+const getLoc = loc => ({ lat: loc.slat, lon: loc.slon, time: loc.time });
 
 // eslint-disable-next-line import/prefer-default-export
 export function handle(event, context, cb) {
@@ -44,22 +44,25 @@ export function handle(event, context, cb) {
     return cb(null, errorRes(`Invalid JSON. event="${JSON.stringify(event)}"`, r));
   }
 
-  if (body._type !== 'location') return cb(null, r);
+  if (body._type !== 'location' || body.tid !== 'fY') return cb(null, r);
 
   return getLocations().then(locs => {
-    if (!shouldUpdate(locs.last, body)) return cb(null, r);
+    if (shouldUpdateLoc(locs.last, body)) {
+      const cur = {
+        lat: body.lat,
+        lon: body.lon,
+        slat: getSkewedLat(body.lat),
+        slon: getSkewedLon(body.lat, body.lon),
+        time: body.tst
+      };
+      locs.last = cur;
+      locs.history.push(cur);
+    } else {
+      locs.last.time = body.tst;
+    }
 
-    const cur = {
-      lat: body.lat,
-      lon: body.lon,
-      slat: getSkewedLat(body.lat),
-      slon: getSkewedLon(body.lat, body.lon),
-      time: body.tst
-    };
-    locs.last = cur;
-    locs.history.push(cur);
     return updateLocations(locs)
       .then(() => cb(null, r))
-      .catch(err => cb(null, errorRes(err, context)));
+      .catch(err => cb(null, errorRes(err, r)));
   });
 }
