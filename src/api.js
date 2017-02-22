@@ -24,10 +24,17 @@ const shouldUpdateLoc = (last, body) => {
   return d > 5;
 };
 
+const shouldUpdate = (headers, body) =>
+  body._type === 'location' &&
+    headers['x-limit-d'] === process.env.LIMIT_D &&
+    headers['x-limit-u'] === process.env.LIMIT_U;
+
 const getLoc = loc => ({ lat: loc.slat, lon: loc.slon, time: loc.time });
 
 // eslint-disable-next-line import/prefer-default-export
 export function handle(event, context, cb) {
+  log(event);
+
   if (event.httpMethod === 'GET') {
     return getLocations().then(locs =>
       cb(
@@ -37,14 +44,16 @@ export function handle(event, context, cb) {
   }
 
   const r = res({ success: true }, context);
+  let headers;
   let body;
   try {
+    headers = JSON.parse(event.headers);
     body = JSON.parse(event.body);
   } catch (e) {
     return cb(null, errorRes(`Invalid JSON. event="${JSON.stringify(event)}"`, r));
   }
 
-  if (body._type !== 'location' || body.tid !== 'fY') return cb(null, r);
+  if (!shouldUpdate(headers, body)) return cb(null, r);
 
   return getLocations().then(locs => {
     if (shouldUpdateLoc(locs.last, body)) {
@@ -61,8 +70,6 @@ export function handle(event, context, cb) {
       locs.last.time = body.tst;
     }
 
-    return updateLocations(locs)
-      .then(() => cb(null, r))
-      .catch(err => cb(null, errorRes(err, r)));
+    return updateLocations(locs).then(() => cb(null, r)).catch(err => cb(null, errorRes(err, r)));
   });
 }
