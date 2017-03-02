@@ -27,7 +27,9 @@ const shouldUpdateLoc = (last, body) => {
 const shouldUpdate = (headers, body) =>
   body._type === 'location' &&
     headers['x-limit-d'] === process.env.LIMIT_D &&
-    headers['x-limit-u'] === process.env.LIMIT_U;
+    headers['x-limit-u'] === process.env.LIMIT_U &&
+    body.lat !== 0 &&
+    body.lon !== 0;
 
 const getLoc = loc => ({ lat: loc.slat, lon: loc.slon, time: loc.time });
 
