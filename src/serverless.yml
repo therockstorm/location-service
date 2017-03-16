@@ -1,5 +1,3 @@
-frameworkVersion: "=1.7.0"
-
 service: ${file(./package.json):name}
 
 provider:
